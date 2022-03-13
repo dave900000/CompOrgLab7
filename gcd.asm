@@ -65,7 +65,7 @@ gcdcalc:
 	beq $t0,$zero gcdret
 	move $a0,$a1
 	move $a1,$t0
-	j gcd
+	j gcdcalc
 gcdret:
 	addi $sp,$sp,4
 	lw $ra, 0($sp)
