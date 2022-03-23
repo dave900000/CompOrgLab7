@@ -50,8 +50,11 @@ end:
 #Output: $v0 will contain the gcd
 #
 gcd:
-	sw $ra, 0($sp)
-	addi $sp,$sp,-4
+	addi $sp,$sp,-12
+	sw $ra, 8($sp)
+	sw $a0, 4($sp)
+	sw $a1, 0($sp)
+	
 	
 	bge $a0,$a1 gcdcalc #Ensure $a0 contains the larger #.
 	move $t0,$a0
@@ -67,10 +70,14 @@ gcdcalc:
 	move $a1,$t0
 	j gcdcalc
 gcdret:
-	addi $sp,$sp,4
-	lw $ra, 0($sp)
 	
 	move $v0,$a1
+	
+	lw $ra, 8($sp)
+	lw $a0, 4($sp)
+	lw $a1, 0($sp)
+	addi $sp,$sp,12
+	
 	jr $ra
 #
 #End gcd function------------------------------------- 
