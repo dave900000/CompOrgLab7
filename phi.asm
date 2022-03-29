@@ -124,6 +124,7 @@ nextphiloop:
 	j philoop
 retphi:
 	move $v0,$t0
+	la $v1,primelist
 	
 	#Pop ra and $a0
 	lw $ra,4($sp)
