@@ -16,7 +16,7 @@
 .data
 primelist: 		.space	12 #This is set aside as a linked list header to store the
 		           #prime numbers counted in this funciton.
-cpuberrmsgA: 		.asciiz "Error. Modulus is less than 2 - this is not valid. Choose new values for p and q."
+cpuberrmsgA: 		.asciiz "Error. Modulus is not valid (too small). Choose new values for p and q."
 cpuberrmsgB:		.asciiz "Error. No valid prime #'s found for exponent. Unexpected condition. Review inputs."
 cpubprimes:		.asciiz "Valid choices for public exponent are: "
 cpubinput:		.asciiz "Please enter a public key exponent selection: "
@@ -55,9 +55,9 @@ cpubexp:
 	#Calculate the toteint of the modulus and
 	#totient of phi(n). Capture all prime #'s
 	#from 1-phi(n) in a list.
-	li $t0,2 #Value of 2 for comparisons
-	bgt $a0,$t0,cpubnoerr #Code branches when n > 2 (n  must be > 2 to work with RSA
-	#Print an error and return 0 if n < 2
+	li $t0,4 #Value of 2 for comparisons
+	bgt $a0,$t0,cpubnoerr #Code branches when n > 4 (n  must be > 4 to work with RSA
+	#Print an error and return 0 if n <= 4
 	li $v0,4
 	la $a0,cpuberrmsgA
 	syscall
@@ -132,7 +132,7 @@ cpubloopA:
 	syscall #$v0 has returned 1 to reach this point this will print $a0 to output
 	#If the address of 4($t4) ( next node ) is not null, then print a comma
 	lw $t5,4($t4)
-	beq $t5,$zero,cpubskipprint #Do not print comma
+	beq $t5,$zero,cpubskipprint #Do not print comma if there is no next value in the list
 	li $v0,4
 	la $a0,comma
 	syscall
@@ -165,12 +165,10 @@ cpubloopB:
 	lw $t1,4($sp)
 	lw $t0,0($sp)
 	addi $sp,$sp,20
-	move $t5,$a0
-	lw $a0,0($sp)
 	bne $v0,$zero,endcpubexp #If e is valid, branch out of loop and return
 	j cpubloopB #Continue asking user for input.
 endcpubexp:
-	move $v0,$t5
+	move $v0,$a0
 	lw $ra,4($sp)
 	lw $a0,0($sp)
 	addi $sp,$sp,8
