@@ -69,7 +69,7 @@ pubexpisvalid:
 	#return and use $t0 as return value ( starts with 0 ) otherwise
 	#change #t0 to true and return.
 	bne $v0,$t1,endpubexpisvalid #Is the gcd of e == 1?
-	bge $v0,$t1,endpubexpisvalid #Is e < toteint of modulus?
+	bge $a0,$a1,endpubexpisvalid #Is e < toteint of modulus?
 	ble $a0,$t1,endpubexpisvalid #Is e > 1?
 	li $t0,1
 endpubexpisvalid:
