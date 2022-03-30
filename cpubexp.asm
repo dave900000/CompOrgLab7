@@ -96,7 +96,7 @@ cpubnoerr:
 	lw $t3,0($t2) #Load size of prime # list into $t3
 	lw $t4,4($t2) #Load address of list head node into $t4
 	bne $t3,$zero,cpubloopA #Branch to loop as long as there is no error
-	#$t3 is zero - indicating no valid exponents. Print error message and
+	#$t3 is zero - indicating no primes to test for valid options. Print error message and
 	#return 0.
 	li $v0,4
 	la $a0,cpuberrmsgB
@@ -106,6 +106,7 @@ cpubnoerr:
 	addi $sp,$sp,8
 	move $v0,$zero
 	jr $ra
+	move $t6,$zero #Set flag $t6 to zero indicating no output (will be zero at end of loop if there are no valid public key exponents)
 cpubloopA:
 	#Iterate through all items in primes list. Address iterator
 	#is $t4 - offset 0 is integer and offset 4 is the address of
@@ -114,20 +115,23 @@ cpubloopA:
 	lw $a0,0($t4) #Load data in node into $a0 for testing
 	move $a1,$t0    #Put totient of modulus in $a1
 	#Stack operations before calling pubexpisvalid function
-	addi $sp,$sp,-20
+	addi $sp,$sp,-24
+	sw $t6,20($sp)
 	sw $t4,16($sp)
 	sw $t3,12($sp)
 	sw $t2,8($sp)
 	sw $t1,4($sp)
 	sw $t0,0($sp)
 	jal pubexpisvalid #$v0 will return true(valid e) or false(invalid e)
+	lw $t6,20($sp)
 	lw $t4,16($sp)
 	lw $t3,12($sp)
 	lw $t2,8($sp)
 	lw $t1,4($sp)
 	lw $t0,0($sp)
-	addi $sp,$sp,20
+	addi $sp,$sp,24
 	beq $v0,$zero,cpubskipprint #If value for e is not valid - do not print to output.
+	li $t6,1 #Set output flag to true - indicating at least some valid output.
 	#e is valid - print to output.
 	syscall #$v0 has returned 1 to reach this point this will print $a0 to output
 	#If the address of 4($t4) ( next node ) is not null, then print a comma
@@ -140,6 +144,15 @@ cpubskipprint:
 	lw $a0,0($sp)
 	lw $t4,4($t4) #Increment primes list pointer to the next address.
 	bne $t4,$zero,cpubloopA #If next address is not null, continue to loop.
+	#If no valid output was produced, print error and return 0.
+	bne $t6,$zero,cpubloopB
+	li $v0,4
+	la $a0,cpuberrmsgB
+	syscall
+	lw $ra,4($sp)
+	lw $a0,0($sp)
+	addi $sp,$sp,8
+	jr $ra
 cpubloopB:
 	li $v0,4
 	la $a0,newline
