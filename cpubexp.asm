@@ -112,6 +112,7 @@ cpubloopA:
 	#the next item. Loop until next item is null, printing each
 	#value.
 	lw $a0,0($t4) #Load data in node into $a0 for testing
+	move $a1,$t0    #Put totient of modulus in $a1
 	#Stack operations before calling pubexpisvalid function
 	addi $sp,$sp,-20
 	sw $t4,16($sp)
@@ -149,7 +150,8 @@ cpubloopB:
 	lw $a0,0($sp)
 	li $v0,5
 	syscall
-	move $t5,$v0 #Input chosen exponent to $t5
+	move $a0,$v0 #Input chosen exponent to $a0 for testing
+	move   $a1,$t0 #Put totient of modulus in $a1
 	addi $sp,$sp,-20
 	sw $t4,16($sp)
 	sw $t3,12($sp)
@@ -163,6 +165,7 @@ cpubloopB:
 	lw $t1,4($sp)
 	lw $t0,0($sp)
 	addi $sp,$sp,20
+	move $t5,$a0
 	lw $a0,0($sp)
 	bne $v0,$zero,endcpubexp #If e is valid, branch out of loop and return
 	j cpubloopB #Continue asking user for input.
