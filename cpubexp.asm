@@ -25,6 +25,7 @@ newline:		.asciiz "\n"
 
 #For main funciton
 inputA:			.asciiz "Please enter the RSA function modulus. "
+outputA:		.asciiz "Your public key exponent is: "
 
 
 .text
@@ -36,6 +37,13 @@ inputA:			.asciiz "Please enter the RSA function modulus. "
 	syscall
 	move $a0,$v0
 	jal cpubexp
+	move $t0,$v0
+	li $v0,4
+	la $a0,outputA
+	syscall
+	li $v0,1
+	move $a0,$t0
+	syscall
 	li $v0,10
 	syscall
 #End main---------------------------
