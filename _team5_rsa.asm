@@ -11,10 +11,11 @@
 # and decrypt a short message.
 #
 #GLOBAL VARS:
-# $s0 = P
-# $s1 = Q
-# $s2 = N ( modulus of p & q )
+# $s0 = p
+# $s1 = q
+# $s2 = n ( modulus of p & q )
 # $s3 = e ( public key exponent )
+# $s4 = d ( private key exponent )
 
 .data
 #Needed for cpubexp
@@ -32,6 +33,7 @@ printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be gre
 inputp:		.asciiz "Input a value for p: "
 inputq:		.asciiz "Input a value for q: "
 printpqerr:	.asciiz "P and Q are not relatively prime - please select new values."
+printd:		.asciiz "d is set to: "
 
 
 
@@ -92,6 +94,23 @@ postpq:
 	#Call public key function and store in $s3.
 	jal cpubexp
 	move $s3,$v0
+	
+	#TO-DO - Call private key function and store in $s4
+	#Calculate phi(n) for priv key function
+	move $a0,$s2
+	jal phi
+	move $a0,$v0 #Move phi(n) into $a0
+	move $a1,$s3 #Move e into $a1
+	jal cprivexp
+	move $s4,$v0
+	
+	#Debug print of value in $s4 ( priv key? )
+	li $v0,4
+	la $a0,printd
+	syscall
+	li $v0,1
+	move $a0,$s4
+	syscall
 	
 	li $v0,10
 	syscall
@@ -454,5 +473,107 @@ gcdret:
 	jr $ra
 #
 #End gcd function------------------------------------- 
-	
+
+#Begin cprivexp---------------------------------------
+cprivexp:
+addi $sp, $sp, -32
+sw $ra, 0($sp)
+sw $s0, 4($sp)
+sw $s1, 8($sp)
+sw $s2, 12($sp)
+sw $s3, 16($sp)
+sw $s4, 20($sp)
+sw $s5, 24($sp)
+sw $s6, 28($sp)
+
+la $k0, ($a0)  
+la $k1, ($a1)   
+
+li $s0, 1    #a-2
+li $s1, 0    #b-2
+la $s2, ($k0)  #d-2
+li $s3, 0    #k-2
+
+li $s4, 0    #a-1
+li $s5, 1    #b-1
+la $s6, ($a1)  #d-1
+div $s7, $k0, $a1 #k-1
+
+d_calc:
+
+#(a-2) - (a-1)*(k-1)
+mul $t0, $s4,$s7    
+sub $t0, $s0, $t0   #a 
+
+#(b-2) - (b-1)*(k-1)
+mul $t1, $s5,$s7   
+sub $t1, $s1, $t1   #b 
+
+#(d-2) - (d-1)*(k-1)
+mul $t2, $s6,$s7   
+sub $t2, $s2, $t2   #d
+
+#(d-1)/d 
+div $t3, $s6, $t2   #k
+
+beq $t2, 1, finish
+
+#new -2 
+la $s0, ($s4)  
+la $s1, ($s5)
+la $s2, ($s6)
+la $s3, ($s7)
+
+#new -1 
+la $s4, ($t0)  
+la $s5, ($t1)
+la $s6, ($t2)
+la $s7, ($t3)
+
+j d_calc
+
+finish:
+
+
+#if b > phi, b = b mod(phi)
+sgt $t4, $s1, $k0 
+beq $t4, $zero, elif
+la $a0, ($t1)
+jal phi  #b mod(phi)
+la $t1, ($a0)
+j gcd_check
+
+#if b < 0, b = b + phi
+elif:
+slt $t4, $s1, $zero 
+beq $t4, $zero, gcd_check
+add $t1, $t1, $k0 # b = b + phi
+j gcd_check
+
+
+
+gcd_check: 
+# check that gcd(\phi, e) = phi*a +ed = 1 
+mul $t5, $k0,$t0  #phi*a 
+mul $t6, $k1,$t1  #e*dorb??
+add $t7,$t6,$t5
+seq $t8, $t7, 1 
+bne  $t8, $zero, end
+la $v0, ($zero) #a = 0 mean we have an error 
+j end
+
+end:
+la $v0, ($t1) #a = 0 mean we have an error 
+#Restore Registers
+lw $s6 28($sp)
+lw $s5 24($sp)
+lw $s4 20($sp)
+lw $s3 16($sp)
+lw $s2 12($sp)
+lw $s1 8($sp)
+lw $s0 4($sp)
+lw $ra 0($sp)
+addi $sp,$sp,32
+jr $ra
+#End cprivexp---------------------------------------
 	
