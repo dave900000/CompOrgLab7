@@ -16,11 +16,10 @@
 # $s2 = N ( modulus of p & q )
 
 .data
-printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50, and also a prime number."
+printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50."
 inputp:		.asciiz "Input a value for p: "
 inputq:		.asciiz "Input a value for q: "
-printp:		.asciiz "Value of p is: "
-printq:		.asciiz "Value of q is: "
+printpqerr:	.asciiz "P and Q are not relatively prime - please select new values."
 
 #Begin main function ----------------------------------------
 .text
@@ -57,6 +56,23 @@ qloop:
 	slti $t1,$s1,50 # Test if Q is < 50
 	beq $t0,1,qloop
 	bne $t1,1,qloop
+
+	#Test to ensure P & Q are prime.
+	move $a0,$s0
+	move $a1,$s1
+	jal gcd
+	beq $v0,1,postpq #If p and q are prime, continue with program
+	li $v0,4
+	la $a0,printpqerr
+	syscall
+	li $v0,11
+	li $a0,10
+	syscall
+	j ploop	#P and Q are not prime - pick again.
+postpq:
+	#Calculate and store modulus
+	mult $s0,$s1
+	mflo $s2
 	
 	li $v0,10
 	syscall
