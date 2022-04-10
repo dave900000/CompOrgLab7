@@ -17,8 +17,8 @@
 
 .data
 printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50, and also a prime number."
-inputp:		.asciiz "Input a value for p."
-inputq:		.asciiz "Input a value for q."
+inputp:		.asciiz "Input a value for p: "
+inputq:		.asciiz "Input a value for q: "
 printp:		.asciiz "Value of p is: "
 printq:		.asciiz "Value of q is: "
 
@@ -57,7 +57,7 @@ qloop:
 	slti $t1,$s1,50 # Test if Q is < 50
 	beq $t0,1,qloop
 	bne $t1,1,qloop
-
+	
 	li $v0,10
 	syscall
 #End main---------------------------------------------
