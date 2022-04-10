@@ -43,15 +43,7 @@ ploop:
 	slti $t1,$s0,50 # Test if P is < 50
 	beq $t0,1,ploop
 	bne $t1,1,ploop
-	
-	#Debug print P
-	li $v0,4
-	la $a0,printp
-	syscall
-	li $v0,1
-	move $a0,$s0
-	syscall
-	
+		
 	#Input value for q and loop until value is between 1-50.
 qloop:
 	li $v0,4
@@ -65,14 +57,6 @@ qloop:
 	slti $t1,$s1,50 # Test if Q is < 50
 	beq $t0,1,qloop
 	bne $t1,1,qloop
-	
-	#Debug print Q
-	li $v0,4
-	la $a0,printq
-	syscall
-	li $v0,1
-	move $a0,$s1
-	syscall
 
 	li $v0,10
 	syscall
