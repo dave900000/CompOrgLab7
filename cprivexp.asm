@@ -3,9 +3,16 @@
 #in a1 -> e
 #out ra -> d
 
-li $a0, 192   #phi = 192
-li $a1, 35    #e = 7
+li $a0, 20   #phi = 192
+li $a1, 7    #e = 7
 jal cprivexp
+
+#Debug print
+move $s0,$v0
+li $v0,1
+move $a0,$s0
+syscall
+
 li $v0, 10
  syscall
 
