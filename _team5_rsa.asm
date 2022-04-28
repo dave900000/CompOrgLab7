@@ -97,14 +97,7 @@ postpq:
 	jal cprivexp
 	move $s4,$v0
 	
-	#Debug print of value in $s4 ( priv key? )
-	li $v0,4
-	la $a0,printd
-	syscall
-	li $v0,1
-	move $a0,$s4
-	syscall
-	
+endmain:	
 	li $v0,10
 	syscall
 #End main---------------------------------------------
