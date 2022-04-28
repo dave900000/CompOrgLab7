@@ -3,8 +3,8 @@
 #
 #Authors: 
 #	Matt Hampton - mhampton8@jh.edu / mthampton@gmail.com
-#
-#4/10/2022
+#	Mike Curran - mcurran6@jhu.edu
+#4/28/2022
 #
 # Program is a simple implementation of the RSA encryption algorithm using
 # small inputs. Program will walk the user through the required inputs that encrypt
@@ -29,10 +29,9 @@ comma:			.asciiz ","
 newline:		.asciiz "\n"
 
 #For main function
-printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50."
+printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50, and must be prime."
 inputp:		.asciiz "Input a value for p: "
 inputq:		.asciiz "Input a value for q: "
-printpqerr:	.asciiz "P and Q are not relatively prime - please select new values."
 printd:		.asciiz "d is set to: "
 
 
@@ -58,7 +57,10 @@ ploop:
 	slti $t1,$s0,50 # Test if P is < 50
 	beq $t0,1,ploop
 	bne $t1,1,ploop
-		
+	#Test for primality
+	jal testForPrime
+	beq $v0,$zero,ploop #Loop if number is not prime.
+	
 	#Input value for q and loop until value is between 1-50.
 qloop:
 	li $v0,4
@@ -72,19 +74,10 @@ qloop:
 	slti $t1,$s1,50 # Test if Q is < 50
 	beq $t0,1,qloop
 	bne $t1,1,qloop
+	#Test for primality
+	jal testForPrime
+	beq $v0,$zero,qloop #Loop if number is not prime.
 
-	#Test to ensure P & Q are prime.
-	move $a0,$s0
-	move $a1,$s1
-	jal gcd
-	beq $v0,1,postpq #If p and q are prime, continue with program
-	li $v0,4
-	la $a0,printpqerr
-	syscall
-	li $v0,11
-	li $a0,10
-	syscall
-	j ploop	#P and Q are not prime - pick again.
 postpq:
 	#Calculate and store modulus
 	mult $s0,$s1
