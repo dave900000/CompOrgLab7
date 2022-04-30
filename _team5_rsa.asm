@@ -3,8 +3,8 @@
 #
 #Authors: 
 #	Matt Hampton - mhampton8@jh.edu / mthampton@gmail.com
-#
-#4/10/2022
+#	Mike Curran - mcurran6@jhu.edu
+#4/28/2022
 #
 # Program is a simple implementation of the RSA encryption algorithm using
 # small inputs. Program will walk the user through the required inputs that encrypt
@@ -29,10 +29,9 @@ comma:			.asciiz ","
 newline:		.asciiz "\n"
 
 #For main function
-printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50."
+printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50, and must be prime."
 inputp:		.asciiz "Input a value for p: "
 inputq:		.asciiz "Input a value for q: "
-printpqerr:	.asciiz "P and Q are not relatively prime - please select new values."
 printd:		.asciiz "d is set to: "
 
 
@@ -58,7 +57,10 @@ ploop:
 	slti $t1,$s0,50 # Test if P is < 50
 	beq $t0,1,ploop
 	bne $t1,1,ploop
-		
+	#Test for primality
+	jal testForPrime
+	beq $v0,$zero,ploop #Loop if number is not prime.
+	
 	#Input value for q and loop until value is between 1-50.
 qloop:
 	li $v0,4
@@ -72,19 +74,10 @@ qloop:
 	slti $t1,$s1,50 # Test if Q is < 50
 	beq $t0,1,qloop
 	bne $t1,1,qloop
+	#Test for primality
+	jal testForPrime
+	beq $v0,$zero,qloop #Loop if number is not prime.
 
-	#Test to ensure P & Q are prime.
-	move $a0,$s0
-	move $a1,$s1
-	jal gcd
-	beq $v0,1,postpq #If p and q are prime, continue with program
-	li $v0,4
-	la $a0,printpqerr
-	syscall
-	li $v0,11
-	li $a0,10
-	syscall
-	j ploop	#P and Q are not prime - pick again.
 postpq:
 	#Calculate and store modulus
 	mult $s0,$s1
@@ -104,14 +97,7 @@ postpq:
 	jal cprivexp
 	move $s4,$v0
 	
-	#Debug print of value in $s4 ( priv key? )
-	li $v0,4
-	la $a0,printd
-	syscall
-	li $v0,1
-	move $a0,$s4
-	syscall
-	
+endmain:	
 	li $v0,10
 	syscall
 #End main---------------------------------------------
@@ -576,4 +562,46 @@ lw $ra 0($sp)
 addi $sp,$sp,32
 jr $ra
 #End cprivexp---------------------------------------
-	
+
+#Begin testForPrime function--------------------------------------
+#
+testForPrime:
+		#Test $a0 for primality and set $v1 to 1 true or 0 false as appropriate, then return.
+		#Tests for 1-3
+		beq	$a0, 1, notPrime
+		beq	$a0, 2, isPrime
+		beq	$a0, 3, isPrime
+
+		#Numbers >3 divisible by 2 or 3 are not prime
+		divu	$t0, $a0, 2
+		mfhi	$t1
+		beq	$t1, 0, notPrime
+		divu	$t0, $a0, 3
+		mfhi	$t1
+		beq	$t1, 0, notPrime
+
+		#Starting with the first prime after 3 (5). Square it and test.
+		#Loop until all options have been exausted.
+		li	$t2, 5
+loop:
+		multu	$t2, $t2
+		mflo	$t3
+		bge	$t3, $t0, isPrime #IF squre of test value is > number, number is prime.
+		divu	$t2, $t0
+		mfhi	$t1
+		beq	$t1, 0, notPrime #If number is divisible by test value, it is not prime.
+		addu	$t0, $t2, 2
+		divu	$t2, $t0
+		mfhi	$t1
+		beq	$t1, 0, notPrime #If number is divisible by test value + 2 it is not prime.
+		addu	$t2, $t2, 6
+		j	loop
+
+isPrime:
+		li	$v0, 1
+		jr	$ra
+
+notPrime:
+		li	$v0, 0
+		jr 	$ra
+#End test for prime function.
