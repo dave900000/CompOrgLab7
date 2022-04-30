@@ -10,7 +10,7 @@
 .data
 
 input_number_array: .space 300
-message: .byte 300
+message: .byte 200
 encrypted_word: .word 200
 newline: .ascii "\n"
 str_file: .asciiz "encrypted.txt"
@@ -59,15 +59,15 @@ main:
 	
 	loop: 	
 		add $t0, $s7, $s6 	# address of byte to examine next
-		lb $t1, 0( $t0 )	# load that byte to get *(s + ct)
+		lb $t1, 0($t0)		# load that byte to get *(s + ct)
 		beq $t1, $zero, exit 	# branch if *(s + ct) == ’\0’
 		addi $s6, $s6, 1 	# increment ct
 		j loop
 	exit:
-	addi $s6 ,$s6, -1
-	
+	addi $s6 ,$s6, -1		# set c back to legnth of s
 	la $s0, input_number_array 	# unsigned int* ptr = number_array
 	li $s1, 1			# num_array_length
+	
 	encrypt_loop_test_in: 		# do {
 		#li $v0, 5 
 		#syscall
@@ -94,13 +94,12 @@ main:
         li $a1, 1
         li $a2, 0
 	syscall  		# File descriptor gets returned in $v0
-	move $s6, $v0  	# Syscall 15 requieres file descriptor in $a0
+	move $s6, $v0  		# Syscall 15 requires file descriptor in $a0
    	 
    	# file_write: 
           
 	# move $s5, $v0	#: byte output
 	la $s5, encrypted_word
-	  
 	sll $t0, $s2, 2
         li $t1, 0
         move $t2, $s5
@@ -117,13 +116,13 @@ main:
 		addi $t2 , $t2, 1
         	bne $t0, $t1 , encrypt_loop_test_out
             	li $v0, 15
-          	move $a0, $s6 # file descriptor 
+          	move $a0, $s6 		# file descriptor 
           	move $a1, $s5 
 		# li $a2, 16
 		addi $t0, $t0 , 4
 		move   $a2, $t0         # hardcoded buffer length
             	syscall
-        # bgt $s2, $zero, encrypt_loop_test_out
+        	# bgt $s2, $zero, encrypt_loop_test_out
         
     	# file_close:
         li $v0, 16  		# $a0 already has the file descriptor
@@ -133,26 +132,26 @@ main:
   	li $v0, 10    		# syscall code 10 for terminating the program
   	syscall
 
-powmod:
+	powmod:
 	# PUSH_REGISTERS
 	li $t0, 1		# unsigned int x = 1
 	move $t1, $a0		# unsigned int y = a
 
-	powmod_loop:					## while (
-		ble $a1, $zero, powmod_while_end 	## b > 0 ) {
+	powmod_loop:					# while (
+		ble $a1, $zero, powmod_while_end 	# b > 0 ) {
 		
-		andi $t2, $a1, 1					## t2 = b % 2
-		beq $t2, $zero, powmod_b_mod_2		## if (t2) {
-		mul $t0, $t0, $t1					##     x *= y
-		divu $t0, $a2						## 	   HI = x % mod
-		mfhi $t0							##     x = HI
-		powmod_b_mod_2:						## }
+		andi $t2, $a1, 1			# t2 = b % 2
+		beq $t2, $zero, powmod_b_mod_2		# if (t2) {
+		mul $t0, $t0, $t1			# x *= y
+		divu $t0, $a2				# HI = x % mod
+		mfhi $t0				# x = HI
+		
+		powmod_b_mod_2:				# }
+		mul $t1, $t1, $t1			# y *= y
+		divu $t1, $a2				# HI = y % mod
+		mfhi $t1				# y = HI
 
-		mul $t1, $t1, $t1					## y *= y
-		divu $t1, $a2						## HI = y % mod
-		mfhi $t1							## y = HI
-
-		srl $a1, $a1, 1						## b /= 2
+		srl $a1, $a1, 1				# b /= 2
 
 		j powmod_loop
 		
@@ -160,7 +159,7 @@ powmod:
 
 		move $v0, $t0
 		# POP_REGISTERS
-		jr $ra 			## return a
+		jr $ra 			# return a
 		# END
 
 
@@ -172,31 +171,31 @@ encrypt:
 	move $s2, $a2
 	move $s3, $a3
 
-	sll $a0, $s3, 2 ## size_in_bytes = text_length * 4
-	li $v0, 9 		## cipher = malloc(size_in_bytes)
-	syscall			## // output in $v0
-	move $s5, $v0	#: cipher
+	sll $a0, $s3, 2 			# size_in_bytes = text_length * 4
+	li $v0, 9 				# cipher = malloc(size_in_bytes)
+	syscall					# // output in $v0
+	move $s5, $v0				# cipher
 
-	li $s4, 0		## for (int i = 0; i < count; ++i) {
+	li $s4, 0				# for (int i = 0; i < count; ++i) {
 	encrypt_loop:
-		bge $s4, $s3, encrypt_exit 	## 
+		bge $s4, $s3, encrypt_exit 	# 
 		sll $t0, $s4, 2
-		add $t0, $t0, $s0	##    unsigned* msg = M + i;
-		lw $a0, 0($t0) 		##    unsigned b = *msg;
+		add $t0, $t0, $s0		# unsigned* msg = M + i;
+		lw $a0, 0($t0) 			# unsigned b = *msg;
 
 		move $a1, $s1
 		move $a2, $s2
 		#move $s6, $s0
 		#move $s7, $s1
-		jal powmod			##    unsigned mod (aka. $v0) = powmod(b, e, modN)
+		jal powmod			# unsigned mod (aka. $v0) = powmod(b, e, modN)
 		#move $s0, $s6
 		#move $s1, $s7
 		sll $t0, $s4, 2
-		add $t0, $t0, $s5	##    unsigned* decry = cipher + i;
-		sw $v0, 0($t0)		##    *decry = mod
+		add $t0, $t0, $s5		# unsigned* decry = cipher + i;
+		sw $v0, 0($t0)			# *decry = mod
 
-		addi $s4, $s4, 1	##	  ++i
-		j encrypt_loop		## } 
+		addi $s4, $s4, 1		# ++i
+		j encrypt_loop			# } 
 	
 	encrypt_exit:
 		move $v0, $s5
