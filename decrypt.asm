@@ -60,7 +60,8 @@ decrypt_str:
 		jal powFP #Get c^d and store in $t0
 		lw $a0,0($sp) #Reload modulus into $a0
 		mov.d $f12,$f0 #Move result of c^d into $f12
-		mtc1 $a1,$f14 #Move modulus into $f14
+		mtc1 $a0,$f14 #Move modulus into $f14
+		cvt.d.w $f14,$f14
 		jal modFP #This should return (c^d) % n int0 $v0
 		
 		#Pop ra and params and return
@@ -69,6 +70,8 @@ decrypt_str:
 		lw $a1,4($sp)
 		lw $a0,0($sp)
 		addi $sp,$sp,16
+		
+		
 		
 		jr $ra
 #
@@ -101,6 +104,7 @@ jr $ra
 #Out: $v0 will contain the integer result
 modFP:
 		mov.d $f0,$f12 #Mod will be caluclated into $f0 with repeated subtraction
+		round.w.d $f0,$f0
 
 loopModFP:	
 		c.lt.d $f0,$f14
