@@ -9,7 +9,7 @@ move $t1,$v0
 li $v0, 10
 syscall
 
-# compute $a0 ^ $a1 and return in $v0
+# compute $a0 ^ $a1 and return in $F0
 powFP: 
 #Move and convert arguments to FP registers.
 mtc1 $a0,$f2
