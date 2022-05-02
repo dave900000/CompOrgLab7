@@ -7,7 +7,6 @@
 #
 
 .data
-in_buf:		.space 201
 in_file:	.asciiz "encrypted.txt"
 out_file:	.asciiz "plaintext.txt"
 input_A:	.asciiz "Please enter the modulus: "
@@ -90,7 +89,7 @@ decrypt:
 		move $t3,$t1 #t3 holds address iterator for string to decrypt
 decrypt_loop:
 		#Loop through input string and decrypt at each offset until  null is reached
-		lb $t5,($t3) #Load next byte		
+		lbu $t5,($t3) #Load next byte		
 		beq $t5,$t4,exit_decrypt_loop #If value at iterator is null, branch out
 		move $a0,$t5
 		addi $sp,$sp,-16
