@@ -1,5 +1,5 @@
 .data
-
+ buffer:   .space 100
 message: .space 200
 encrypted_char: .space 200
 input_number_array: .space 200
@@ -9,7 +9,8 @@ str_exponent: .asciiz "\n enter your exponent:\n"
 str_modulus: .asciiz "enter modulus: \n"
 str_plain_text: .asciiz "enter plain text: \n"
 end_message: .asciiz "enter plain text: \n"
- buffer:   .space 100
+
+fout:   .asciiz "testout.txt"      # filename for output
 
   string:  .asciiz "Hello"     # We want to lower this string 
 
@@ -31,15 +32,26 @@ main:
  	li $s0, 5   #e
  	li $s1, 5    #mod
  	#la $t2, string # Load here the ttring  
+	li $t7, 0
 	
+	move $t4, $t2
  	
        encrypt:  
-       lb $t3, ($t2)  # get the firtt byte pointed by the address  
-       beqz $t3, end  # if is equal to zero, the string is terminated  
+       
+       
+       lbu $t3, ($t2)  # get the firtt byte pointed by the address  
+       li  $t6, 10 
+       beq $t3, $t6, end  # if is equal to zero, the string is terminated  
 
        continue: 
+       addi, $t7, $t7, 1
        move $a0, $t3	
        jal powmod
+       
+        move  $t3, $s3
+	sb $t3, 0($t2)
+	
+
         
         # Printing out the text
     	li $v0, 1
@@ -50,7 +62,33 @@ main:
         j encrypt  
   # The while loop ends here --------------------
   
-      end:    
+      end:  
+      
+      # Open (for writing) a file that does not exist
+li   $v0, 13       # system call for open file
+la   $a0, fout     # output file name
+li   $a1, 1       # Open for writing (flags are 0: read, 1: write)
+li   $a2, 0        # mode is ignored
+syscall            # open a file (file descriptor returned in $v0)
+move $s6, $v0      # save the file descriptor 
+
+# Write to file just opened
+li   $v0, 15       # system call for write to file
+move $a0, $s6      # file descriptor 
+move $a1, $t4      # address of buffer from which to write
+move   $a2, $t7        # hardcoded buffer length
+syscall            # write to file
+
+# Close the file 
+li   $v0, 16       # system call for close file
+move $a0, $s6      # file descriptor to close
+syscall            # close file  
+      
+      
+      
+      
+      
+      
        li $v0, 10  
        syscall  
        
