@@ -1,24 +1,11 @@
 .data
- buffer:   .space 100
-message: .space 200
-encrypted_char: .space 200
-input_number_array: .space 200
-newline: .ascii "\n"
-str_file: .asciiz "encrypted.txt"
-str_exponent: .asciiz "\n enter your exponent:\n"
-str_modulus: .asciiz "enter modulus: \n"
+buffer:   .space 100
 str_plain_text: .asciiz "enter plain text: \n"
-end_message: .asciiz "enter plain text: \n"
-
 fout:   .asciiz "testout.txt"      # filename for output
-
-  string:  .asciiz "Hello"     # We want to lower this string 
-
+string:  .asciiz "Hello"     # We want to lower this string 
 
 .text
-
 main:
-
 addi $sp, $sp, -16
 sw $t1, 0($sp)
 sw $t2, 4($sp)
@@ -42,10 +29,8 @@ sw $t4, 12($sp)
 	move $t4, $t2
  	
        encrypt:  
-       
-       
        lbu $t3, ($t2)  # get the firtt byte pointed by the address  
-       li  $t6, 10 
+       li  $t6, 10  #NULL
        beq $t3, $t6, end  # if is equal to zero, the string is terminated  
 
        continue: 
@@ -53,7 +38,7 @@ sw $t4, 12($sp)
        move $a0, $t3	
        jal powmodB
        
-        move  $t3, $s3
+        move  $t3, $v0
 	sb $t3, 0($t2)
 	
 
