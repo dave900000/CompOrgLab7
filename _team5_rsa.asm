@@ -34,6 +34,10 @@ inputp:		.asciiz "Input a value for p: "
 inputq:		.asciiz "Input a value for q: "
 printd:		.asciiz "d is set to: "
 
+buffer:   .space 100
+str_plain_text: .asciiz "enter plain text: \n"
+fout:   .asciiz "testout.txt"      # filename for output
+string:  .asciiz "Hello"     # We want to lower this string 
 
 
 #Begin main function ----------------------------------------
@@ -88,7 +92,6 @@ postpq:
 	jal cpubexp
 	move $s3,$v0
 	
-	#TO-DO - Call private key function and store in $s4
 	#Calculate phi(n) for priv key function
 	move $a0,$s2
 	jal phi
@@ -97,9 +100,143 @@ postpq:
 	jal cprivexp
 	move $s4,$v0
 	
+############ Start encription#######
+
+	init_encrypt:
+	addi $sp, $sp, -28
+	sw $t1, 0($sp)
+	sw $t2, 4($sp)
+	sw $t3, 8($sp)
+	sw $t4, 12($sp)
+	sw $t5, 16($sp)
+	sw $t6, 20($sp)
+	sw $t7, 24($sp)
+
+         la $a0,str_plain_text #Load and print string asking for string
+         li $v0,4
+         syscall
+
+         li $v0,8 #take in input
+         la $a0, buffer #load byte space into address
+         li $a1, 20 # allot the byte space for string
+         move $t2,$a0 #save string to t0
+         syscall
+	
+ 	#la $t2, string # Load here the string  
+	li $t7, 1
+	move $t4, $t2
+ 	
+       encrypt:  
+       lbu $t3, ($t2)  # get the firtt byte pointed by the address  
+       li  $t6, 10  #NULL
+       beq $t3, $t6, end_encrypt  # if is equal to zero, the string is terminated  
+
+       continue: 
+       addi, $t7, $t7, 1 #counter for writing to file 
+       move $a0, $t3	#move char to a0 for powemod 
+       jal powmodB
+       
+        move  $t3, $v0  #grab value from powmod 
+	sb $t3, 0($t2)   #write over reg with new value
+			
+ 
+        add  $t2, $t2, 1   # Increment the address  
+        j encrypt  
+  
+      end_encrypt:  
+      
+      # Open (for writing) a file that does not exist
+	li   $v0, 13       # system call for open file
+	la   $a0, fout     # output file name
+	li   $a1, 1       # Open for writing (flags are 0: read, 1: write)
+	li   $a2, 0        # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move $s6, $v0      # save the file descriptor 
+
+	# Write to file just opened
+	li   $v0, 15       # system call for write to file
+	move $a0, $s6      # file descriptor 
+	move $a1, $t4      # address of buffer from which to write
+	move   $a2, $t7        # hardcoded buffer length
+	syscall            # write to file
+
+	# Close the file 
+	li   $v0, 16       # system call for close file
+	move $a0, $s6      # file descriptor to close
+	syscall            # close file  
+      
+ 
+	lw $t7, 24($sp)  
+	lw $t6 20($sp)
+	lw $t5 16($sp)
+ 	lw $t4 12($sp)
+	lw $t3 8($sp)
+	lw $t2 4($sp)
+	lw $t1 0($sp)
+	addi $sp,$sp,28   
+	li $v0, 10  
+         syscall 
+	
+	    
+
+  
+     
+       
+#Begin powmodB------------------------------
+#
+#Input: $a0 contains encrypted or unencrypted byte value(c) or (m) 
+#	$a1 has exponent (d or e)
+#	$a2 has modulus (n)
+#Output: $v0 will contain c^d % n or m^e%n for encryption and decryption.
+#
+
+powmodB:
+		#T8 and T9 must be saved for e and mod, moving them to a1 and a2 
+		move $a1, $t8   #e
+ 		move $a2, $t9    #mod
+ 		
+ 		
+		addi $sp, $sp, -8
+		sw $t0, 0($sp)
+		sw $t1, 4($sp)
+		
+		addi $sp,$sp,-4
+		sw $ra,0($sp)
+		
+		move $t0,$zero 	#Loop counter
+		move $t1,$zero 	#Initialize intermediate register to hold multiplcation results
+		li $v0,1	#Initialize result register to 1
+		
+powmodB_loop:	
+		#Loop executes the calculation result = (bytevalue * lastresult) % n
+		#This is using the concept that (a ? b) mod m = [(a mod m) ? (b mod m)] mod m
+		#Result will be in $v0 when complete
+		addi $t0,$t0,1 		#Increment counter
+		multu $a0,$v0 		#Multiply byte value by last modulus calculation in $v0
+		mflo $t1
+		divu $t1,$a2		#Calculate modulus of above result and update $v0
+		mfhi $v0
+		blt $t0,$a1,powmodB_loop#Loop if counter < exponent
+		
+		lw $ra,0($sp)
+		addi $sp,$sp,4
+		
+		lw $t1 4($sp)
+		lw $t0 0($sp)
+		addi $sp,$sp,8
+		
+		jr $ra
+#
+#End powmodB--------------------------------
+        
+                     
+	
+	
+	
 endmain:	
 	li $v0,10
 	syscall
+
 #End main---------------------------------------------
 
 #Begin cpubexp----------------------
