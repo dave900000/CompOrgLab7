@@ -4,7 +4,8 @@
 #Authors: 
 #	Matt Hampton - mhampton8@jh.edu / mthampton@gmail.com
 #	Mike Curran - mcurran6@jhu.edu
-#4/28/2022
+#	Noah Regnier - nregnie1@jhu.edu
+#5/2/2022
 #
 # Program is a simple implementation of the RSA encryption algorithm using
 # small inputs. Program will walk the user through the required inputs that encrypt
