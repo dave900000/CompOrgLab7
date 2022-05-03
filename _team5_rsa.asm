@@ -28,6 +28,11 @@ cpubinput:		.asciiz "Please enter a public key exponent selection: "
 comma:			.asciiz ","
 newline:		.asciiz "\n"
 
+in_file:	.asciiz "encrypted.txt"
+out_file:	.asciiz "plaintext.txt"
+input_A:	.asciiz "Please enter the modulus: "
+input_B:	.asciiz "Please enter the private key: "
+
 #For main function
 printpqmsg:	.asciiz	"Please input 2 values ( p and q ). Each value should be greater than 1, less than 50, and must be prime."
 inputp:		.asciiz "Input a value for p: "
@@ -36,7 +41,7 @@ printd:		.asciiz "d is set to: "
 
 buffer:   .space 100
 str_plain_text: .asciiz "enter plain text: \n"
-fout:   .asciiz "testout.txt"      # filename for output
+fout:   .asciiz "encrypted.txt"      # filename for output
 string:  .asciiz "Hello"     # We want to lower this string 
 
 
@@ -134,6 +139,9 @@ postpq:
        continue: 
        addi, $t7, $t7, 1 #counter for writing to file 
        move $a0, $t3	#move char to a0 for powemod 
+       move $a1, $s3 
+       move $a2, $s2 
+       
        jal powmodB
        
         move  $t3, $v0  #grab value from powmod 
@@ -173,15 +181,130 @@ postpq:
 	lw $t3 8($sp)
 	lw $t2 4($sp)
 	lw $t1 0($sp)
-	addi $sp,$sp,28   
-	li $v0, 10  
-         syscall 
+	addi $sp,$sp,28  
 	
-	    
+	la $a0, in_file
+	la $a3, out_file
 
+	move $a1, $s4
+	move $a2, $s2
+	jal decrypt
+	li $v0, 10  
+        syscall 
+	 
+
+
+
+######Begin Decrypt#############
+#
+#Input: $a0 = filename to decrypt
+#	$a1 = key
+#	$a2 = modulus
+#	$a3 = filename for output
+#
+#Out: None - a file is generated based on user input in working directory containing
+#encrypted message.
+#
+decrypt:
+		addi $sp,$sp,-20
+		sw $ra,16($sp)
+		sw $a3,12($sp)
+		sw $a2,8($sp)
+		sw $a1,4($sp)
+		sw $a0,0($sp)
+		
+		#Open file for read
+		li $v0,13
+		#$a0 already has file name
+		li $a1,0
+		li $a2,0
+		syscall
+		move $t0,$v0 #File descriptor in $t0
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		
+		#Create string buffer on heap
+		li $v0,9
+		li $a0,201
+		syscall
+		move $t1,$v0 #String buffer for file read in $t1
+		lw $a0,0($sp)
+		
+		#Read from file into buffer
+		li $v0,14
+		move $a0,$t0
+		move $a1,$t1
+		li $a2,200
+		syscall
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		move $t6,$v0 #$t6 will have # of chars read to buffer
+		
+		li $t4,0x0a #Definition of null terminator
+		move $t3,$t1 #t3 holds address iterator for string to decrypt
+decrypt_loop:
+		#Loop through input string and decrypt at each offset until  null is reached
+		lbu $t5,($t3) #Load next byte		
+		beq $t5,$t4,exit_decrypt_loop #If value at iterator is null, branch out
+		move $a0,$t5
+		addi $sp,$sp,-16
+		sw $t6,12($sp)
+		sw $t1,8($sp)
+		sw $t3,4($sp)
+		sw $t0,0($sp)
+		jal powmodB
+		lw $t6,12($sp)
+		lw $t1,8($sp)
+		lw $t3,4($sp)
+		lw $t0,0($sp)
+		addi $sp,$sp,16
+		lw $a0,0($sp)
+		lw $a3,12($sp)
+		sb $v0,($t3) #Store decrypted result in current byte.
+		addi $t3,$t3,1
+		j decrypt_loop
+exit_decrypt_loop:
+		#Close input file
+		li $v0,16
+		move $a0,$t0
+		syscall
+		lw $a0,0($sp)
+		
+		#Open output file for writing
+		li $v0,13
+		move $a0,$a3
+		li $a1,1
+		li $a2,0
+		syscall
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		move $t0,$v0 #New file descriptor in $t0
+		
+		#Write decrypted buffer to output file.
+		li $v0,15
+		move $a0,$t0
+		move $a1,$t1
+		move $a2,$t6
+		syscall
+		
+		#Close the file
+		li $v0,16
+		move $a0,$t0
+		syscall
+		
+		lw $ra,16($sp)
+		lw $a3,12($sp)
+		lw $a2,8($sp)
+		lw $a1,4($sp)
+		lw $a0,0($sp)
+		addi $sp,$sp,20
+		jr $ra
+		
+		
   
-     
-       
 #Begin powmodB------------------------------
 #
 #Input: $a0 contains encrypted or unencrypted byte value(c) or (m) 
@@ -191,17 +314,13 @@ postpq:
 #
 
 powmodB:
-		#T8 and T9 must be saved for e and mod, moving them to a1 and a2 
-		move $a1, $t8   #e
- 		move $a2, $t9    #mod
- 		
- 		
-		addi $sp, $sp, -8
+
+  		
+		addi $sp, $sp, -12
 		sw $t0, 0($sp)
 		sw $t1, 4($sp)
+		sw $ra,8($sp)
 		
-		addi $sp,$sp,-4
-		sw $ra,0($sp)
 		
 		move $t0,$zero 	#Loop counter
 		move $t1,$zero 	#Initialize intermediate register to hold multiplcation results
@@ -217,13 +336,12 @@ powmodB_loop:
 		divu $t1,$a2		#Calculate modulus of above result and update $v0
 		mfhi $v0
 		blt $t0,$a1,powmodB_loop#Loop if counter < exponent
+	
 		
-		lw $ra,0($sp)
-		addi $sp,$sp,4
-		
+		lw $ra,8($sp)
 		lw $t1 4($sp)
 		lw $t0 0($sp)
-		addi $sp,$sp,8
+		addi $sp,$sp,12
 		
 		jr $ra
 #
